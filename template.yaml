@@ -88,8 +88,6 @@ Resources:
   ConfigureS3BucketNotifications:
     Type: Custom::S3BucketNotifications
     DependsOn: 
-      - ReportsBucket
-      - AnalysisFunction
       - LambdaPermission
     Properties:
       ServiceToken: !GetAtt NotificationFunction.Arn
