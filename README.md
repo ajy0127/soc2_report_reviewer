@@ -66,6 +66,18 @@ For technical users who prefer to prepare the deployment package themselves:
    ```
 2. Follow the prompts to package and upload the Lambda code to your S3 bucket
 
+### Packaging the Lambda Code
+
+Before deploying, package the Lambda code:
+
+1. Navigate to the `cloudformation` directory in your terminal.
+2. Run the following commands:
+   ```bash
+   chmod +x package_lambda.sh
+   ./package_lambda.sh
+   ```
+3. This will generate a `lambda_code.zip` file, which you will upload to your S3 bucket during deployment.
+
 ### Usage
 
 1. Upload a SOC 2 report PDF to the `reports/` prefix in the created S3 bucket

@@ -41,3 +41,6 @@ Use this checklist to ensure you have everything ready before deploying the SOC 
 ---
 
 Once you've checked all the required items, you're ready to proceed with deployment using the instructions in the Deployment Guide. 
+
+- [ ] I have created the Lambda code package using the `package_lambda.sh` script
+  - *Note: Run `chmod +x package_lambda.sh && ./package_lambda.sh` in the `cloudformation` directory to create the package* 

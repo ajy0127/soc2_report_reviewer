@@ -14,6 +14,18 @@ You will need:
 
 ## Deployment Steps
 
+### Step 0: Package the Lambda Code
+
+Before uploading the Lambda code to S3, you need to package it:
+
+1. Open a terminal and navigate to the `cloudformation` directory.
+2. Run the following commands to make the script executable and package the code:
+   ```bash
+   chmod +x package_lambda.sh
+   ./package_lambda.sh
+   ```
+3. This will create a `lambda_code.zip` file in the `cloudformation` directory, ready for upload.
+
 ### Step 1: Upload the Lambda Code Package
 
 1. Sign in to the AWS Management Console
