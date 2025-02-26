@@ -61,6 +61,9 @@ Resources:
                 StorageClass: STANDARD_IA
               - TransitionInDays: 180
                 StorageClass: GLACIER
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       Tags:
         - Key: Purpose
           Value: SOC2ReportAnalysis
@@ -143,95 +146,37 @@ Resources:
         - Key: Purpose
           Value: SOC2ReportAnalysis
 
-  # S3 Event Notification to trigger Lambda
+  # EventBridge rule for S3 events
+  S3EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Rule to capture S3 object creation events for PDF files in the reports folder"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref ReportsBucket
+          object:
+            key:
+              - prefix: "reports/"
+              - suffix: ".pdf"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AnalysisFunction.Arn
+          Id: "AnalysisLambdaTarget"
+
+  # Permission for EventBridge to invoke Lambda
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AnalysisFunction
-      Principal: s3.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:s3:::${ReportsBucket}"
-
-  # Update bucket notification configuration
-  BucketNotificationResource:
-    Type: Custom::S3BucketNotification
-    DependsOn:
-      - LambdaInvokePermission
-    Properties:
-      ServiceToken: !GetAtt NotificationFunction.Arn
-      BucketName: !Ref ReportsBucket
-      NotificationConfiguration:
-        LambdaFunctionConfigurations:
-          - Event: s3:ObjectCreated:*
-            Filter:
-              Key:
-                FilterRules:
-                  - Name: prefix
-                    Value: reports/
-                  - Name: suffix
-                    Value: .pdf
-            LambdaFunctionArn: !GetAtt AnalysisFunction.Arn
-
-  # Lambda function to set up bucket notifications
-  NotificationFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.handler
-      Role: !GetAtt NotificationFunctionRole.Arn
-      Runtime: python3.9
-      Timeout: 30
-      Code:
-        ZipFile: |
-          import json
-          import boto3
-          import cfnresponse
-          
-          def handler(event, context):
-              try:
-                  if event['RequestType'] == 'Delete':
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-                      return
-                      
-                  props = event['ResourceProperties']
-                  bucket_name = props['BucketName']
-                  notification = props['NotificationConfiguration']
-                  
-                  s3 = boto3.client('s3')
-                  s3.put_bucket_notification_configuration(
-                      Bucket=bucket_name,
-                      NotificationConfiguration=notification
-                  )
-                  
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-              except Exception as e:
-                  print(e)
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
-
-  # IAM Role for notification Lambda function
-  NotificationFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: S3NotificationAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutBucketNotification
-                  - s3:PutBucketNotificationConfiguration
-                Resource:
-                  - !Sub "arn:aws:s3:::${ReportsBucket}"
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt S3EventRule.Arn
 
 Outputs:
   ReportsBucketName:
