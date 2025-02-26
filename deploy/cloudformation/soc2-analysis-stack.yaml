@@ -68,6 +68,81 @@ Resources:
         - Key: Purpose
           Value: SOC2ReportAnalysis
 
+  # Create empty reports folder in S3 bucket using Lambda custom resource
+  ReportsFolderCreatorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3PutObject
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${ReportsBucket}/reports/"
+
+  ReportsFolderCreator:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt ReportsFolderCreatorRole.Arn
+      Runtime: python3.9
+      Timeout: 30
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import logging
+          
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          
+          def handler(event, context):
+              logger.info('Received event: %s', event)
+              
+              # Initialize response
+              response_data = {}
+              
+              try:
+                  # Get properties from event
+                  props = event['ResourceProperties']
+                  bucket_name = props['BucketName']
+                  
+                  # Initialize S3 client
+                  s3 = boto3.client('s3')
+                  
+                  if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                      # Create empty object with key 'reports/'
+                      logger.info('Creating reports/ folder in bucket %s', bucket_name)
+                      s3.put_object(
+                          Bucket=bucket_name,
+                          Key='reports/',
+                          ContentType='application/x-directory'
+                      )
+                      response_data['Message'] = 'Created reports/ folder'
+                  
+                  # Delete event is handled automatically by S3 when bucket is deleted
+                  
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  logger.error('Error: %s', str(e))
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  CreateReportsFolder:
+    Type: Custom::CreateFolder
+    Properties:
+      ServiceToken: !GetAtt ReportsFolderCreator.Arn
+      BucketName: !Ref ReportsBucket
+
   # IAM Role for Lambda function
   AnalysisLambdaRole:
     Type: AWS::IAM::Role

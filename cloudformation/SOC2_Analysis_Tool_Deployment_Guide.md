@@ -69,7 +69,7 @@ Before uploading the Lambda code to S3, you need to package it:
 
 1. In the AWS Management Console, search for "S3" and select it
 2. Click on the bucket name shown in the "ReportsBucketName" output
-3. Navigate to the "reports/" folder (create it if it doesn't exist)
+3. Navigate to the "reports/" folder
 4. Click "Upload"
 5. Click "Add files" and select your SOC 2 report PDF
 6. Click "Upload"
