@@ -86,7 +86,7 @@ def lambda_handler(event, context):
                 'message': 'Successfully processed SOC 2 report',
                 'report': key,
                 'analysis': analysis_key,
-                'timestamp': timestamp
+                'timestamp': timestamp.isoformat()
             })
         }
         
