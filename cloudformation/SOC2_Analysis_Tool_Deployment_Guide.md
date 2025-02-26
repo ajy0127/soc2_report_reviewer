@@ -52,7 +52,7 @@ Before uploading the Lambda code to S3, you need to package it:
    - **LogLevel**: Leave as "INFO" (default)
    - **BedrockModelId**: Leave as default
    - **DeploymentBucket**: Enter the S3 bucket name from Step 1
-   - **DeploymentPrefix**: Leave empty (unless you uploaded to a folder)
+   - **DeploymentPrefix**: Leave empty if the Lambda code is at the root of the bucket. Only specify a value if you uploaded the Lambda code to a specific folder in the bucket (without leading or trailing slashes).
 8. Click "Next"
 9. On the "Configure stack options" page, click "Next"
 10. Review the details and check the acknowledgment box at the bottom

@@ -130,7 +130,10 @@ Resources:
       Role: !GetAtt AnalysisLambdaRole.Arn
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: !Sub "${DeploymentPrefix}/lambda_code.zip"
+        S3Key: !If 
+          - HasDeploymentPrefix
+          - !Sub "${DeploymentPrefix}/lambda_code.zip"
+          - "lambda_code.zip"
       Environment:
         Variables:
           STAKEHOLDER_EMAIL: !Ref StakeholderEmail
@@ -229,6 +232,9 @@ Resources:
                   - s3:PutBucketNotificationConfiguration
                 Resource:
                   - !Sub "arn:aws:s3:::${ReportsBucket}"
+
+Conditions:
+  HasDeploymentPrefix: !Not [!Equals [!Ref DeploymentPrefix, ""]]
 
 Outputs:
   ReportsBucketName:

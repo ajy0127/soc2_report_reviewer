@@ -130,7 +130,10 @@ Resources:
       Role: !GetAtt AnalysisLambdaRole.Arn
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: !Sub "${DeploymentPrefix}/lambda_code.zip"
+        S3Key: !If 
+          - HasDeploymentPrefix
+          - !Sub "${DeploymentPrefix}/lambda_code.zip"
+          - "lambda_code.zip"
       Environment:
         Variables:
           STAKEHOLDER_EMAIL: !Ref StakeholderEmail
@@ -245,4 +248,7 @@ Outputs:
 
   LambdaFunctionArn:
     Description: ARN of the Lambda function for SOC 2 report analysis
-    Value: !GetAtt AnalysisFunction.Arn 
+    Value: !GetAtt AnalysisFunction.Arn
+
+Conditions:
+  HasDeploymentPrefix: !Not [!Equals [!Ref DeploymentPrefix, ""]] 
