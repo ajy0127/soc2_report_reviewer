@@ -47,50 +47,9 @@ The solution uses the following AWS services:
 - Access to the AWS Management Console
 - A verified email address in Amazon SES (for sending notifications)
 
-### Deployment
+### Next Steps
 
-We've designed the deployment process to be straightforward, even for those without extensive technical experience:
-
-1. Review the [Pre-Deployment Checklist](cloudformation/pre_deployment_checklist.md) to ensure you have everything you need
-2. Follow the step-by-step instructions in the [CloudFormation Deployment Guide](cloudformation/README.md)
-3. For a printable version of the guide, see the [Printable Deployment Guide](cloudformation/SOC2_Analysis_Tool_Deployment_Guide.md)
-4. If you have questions, check the [Frequently Asked Questions](cloudformation/faq.md)
-
-For technical users who prefer to prepare the deployment package themselves:
-
-1. Use the provided packaging script:
-   ```
-   cd cloudformation
-   chmod +x package_lambda.sh
-   ./package_lambda.sh
-   ```
-2. Follow the prompts to package and upload the Lambda code to your S3 bucket
-
-### Packaging the Lambda Code
-
-Before deploying, package the Lambda code:
-
-1. Navigate to the `cloudformation` directory in your terminal.
-2. Run the following commands:
-   ```bash
-   chmod +x package_lambda.sh
-   ./package_lambda.sh
-   ```
-3. This will generate a `lambda_code.zip` file, which you will upload to your S3 bucket during deployment.
-
-### Usage
-
-1. Upload a SOC 2 report PDF to the `reports/` prefix in the created S3 bucket
-   - You can do this through the AWS Management Console
-   - Navigate to S3, find your bucket, and upload to the reports/ folder
-2. Wait for the analysis to complete (typically 5-10 minutes for reports up to 75 pages)
-3. Check your email for the analysis results
-4. The email will contain:
-   - Executive summary of the report
-   - Quality rating
-   - Key controls identified
-   - Framework mappings
-   - Identified gaps
+For detailed deployment instructions, please refer to the [CloudFormation Deployment Guide](cloudformation/SOC2_Analysis_Tool_Deployment_Guide.md). This guide will walk you through the entire deployment process, including packaging the Lambda code and setting up the necessary AWS resources.
 
 ## Testing
 
