@@ -1,3 +1,5 @@
+[![CI](https://github.com/ajy0127/soc2_report_reviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/ajy0127/soc2_report_reviewer/actions/workflows/ci.yml)
+
 # SOC 2 Report Analysis Tool
 
 An automated serverless solution for analyzing SOC 2 reports using AWS services and AI, designed for GRC professionals.
