@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for deploying the SOC 2 Report Analysis Tool in your AWS environment. The tool automatically analyzes SOC 2 reports and sends the results to your email.
+This guide provides step-by-step instructions for deploying the SOC 2 Report Analysis Tool in your AWS environment. The tool automatically analyzes SOC 2 reports and sends the results to your email. It uses Amazon EventBridge to detect when new PDF files are uploaded to the S3 bucket, triggering the analysis process.
 
 ## Before You Begin
 
@@ -87,6 +87,11 @@ Before uploading the Lambda code to S3, you need to package it:
 - Ensure you're uploading to the correct S3 bucket and "reports/" folder
 - Verify the file is a valid PDF
 - Check that the file size is under 50MB
+
+### EventBridge Not Triggering
+- Verify that EventBridge is enabled for the S3 bucket
+- Check that the PDF file was uploaded to the "reports/" folder
+- Ensure the file has a ".pdf" extension
 
 ### Deployment Failures
 - Check the "Events" tab in CloudFormation for error messages
