@@ -5,9 +5,10 @@ Main Lambda handler for the SOC 2 Report Analysis Tool.
 import json
 import os
 import logging
-from datetime import datetime, UTC
+from datetime import datetime
 import boto3
 import traceback
+import pytz
 
 # Import services
 from textract_service import extract_text
@@ -74,7 +75,7 @@ def lambda_handler(event, context):
         
         # Tag the original PDF
         logger.info("Tagging original PDF")
-        timestamp = datetime.now(UTC).isoformat()
+        timestamp = datetime.now(pytz.UTC)
         tag_pdf(bucket, key, 'report-run-date', timestamp)
         
         logger.info("Processing completed successfully")
