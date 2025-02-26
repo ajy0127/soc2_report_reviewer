@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SOC2 Report Reviewer Application
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
+    Description: Environment name
+
+  NotificationEmail:
+    Type: String
+    Default: admin@example.com
+    Description: Email address to receive notifications
+
+Resources:
+  # S3 Buckets
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub soc2-reports-${AWS::AccountId}-${Environment}
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReports
+            Status: Enabled
+            ExpirationInDays: 90
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Lambda Function
+  AnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub soc2-analysis-${Environment}
+      CodeUri: ./lambda_package/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      MemorySize: 1024
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          REPORTS_BUCKET: !Ref ReportsBucket
+          STAKEHOLDER_EMAIL: !Ref NotificationEmail
+          LOG_LEVEL: INFO
+          YOLO_MODE: 'false'
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ReportsBucket
+        - S3WritePolicy:
+            BucketName: !Ref ReportsBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - textract:DetectDocumentText
+                - textract:AnalyzeDocument
+                - textract:StartDocumentTextDetection
+                - textract:GetDocumentTextDetection
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: '*'
+      Tags:
+        Environment: !Ref Environment
+
+  # Lambda Permission for S3
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AnalysisFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt ReportsBucket.Arn
+
+  # Configure S3 bucket notifications using a custom resource
+  ConfigureS3BucketNotifications:
+    Type: Custom::S3BucketNotifications
+    DependsOn: 
+      - ReportsBucket
+      - AnalysisFunction
+      - LambdaPermission
+    Properties:
+      ServiceToken: !GetAtt NotificationFunction.Arn
+      BucketName: !Ref ReportsBucket
+      NotificationConfiguration:
+        LambdaFunctionConfigurations:
+          - Event: s3:ObjectCreated:*
+            Filter:
+              Key:
+                FilterRules:
+                  - Name: prefix
+                    Value: reports/
+                  - Name: suffix
+                    Value: .pdf
+            LambdaFunctionArn: !GetAtt AnalysisFunction.Arn
+
+  # Lambda function to configure S3 bucket notifications
+  NotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./deploy/notification_function/
+      Handler: index.handler
+      Runtime: python3.9
+      Timeout: 60
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutBucketNotification
+              Resource: !Sub arn:aws:s3:::${ReportsBucket}
+
+  # CloudWatch Log Group
+  AnalysisFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AnalysisFunction}
+      RetentionInDays: 30
+
+Outputs:
+  ReportsBucketName:
+    Description: Name of the S3 bucket for SOC2 reports
+    Value: !Ref ReportsBucket
+
+  AnalysisFunctionName:
+    Description: Name of the Lambda function
+    Value: !Ref AnalysisFunction
+
+  AnalysisFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt AnalysisFunction.Arn 

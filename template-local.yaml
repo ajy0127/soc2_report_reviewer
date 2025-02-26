@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SOC2 Report Reviewer Application - Local Testing
+
+Resources:
+  AnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: soc2-analysis-local
+      CodeUri: ./lambda_package/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      MemorySize: 1024
+      Environment:
+        Variables:
+          ENVIRONMENT: dev
+          REPORTS_BUCKET: soc2-reports-local
+          STAKEHOLDER_EMAIL: test@example.com
+          LOG_LEVEL: DEBUG
+          YOLO_MODE: 'true' 

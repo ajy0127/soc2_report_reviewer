@@ -16,7 +16,7 @@ fi
 
 # Get parameters from user
 read -p "Enter your S3 bucket name for deployment: " BUCKET_NAME
-read -p "Enter prefix for Lambda code (leave empty for none): " PREFIX
+# read -p "Enter prefix for Lambda code (leave empty for none): " PREFIX
 read -p "Enter AWS region (e.g., us-east-1): " REGION
 
 # Set default region if not provided
@@ -48,42 +48,24 @@ mv $TEMP_DIR/../lambda_code.zip .
 echo "Cleaning up..."
 rm -rf $TEMP_DIR
 
-# Upload to S3
-echo "Uploading to S3..."
-if [ -z "$PREFIX" ]; then
-    aws s3 cp lambda_code.zip s3://$BUCKET_NAME/lambda_code.zip --region $REGION
-else
-    aws s3 cp lambda_code.zip s3://$BUCKET_NAME/$PREFIX/lambda_code.zip --region $REGION
-fi
+# Provide instructions for manual upload
+cat <<EOL
 
-# Check if upload was successful
-if [ $? -eq 0 ]; then
-    echo
-    echo "====================================================="
-    echo "Success! Lambda code has been packaged and uploaded."
-    echo
-    echo "Deployment Information:"
-    echo "- S3 Bucket: $BUCKET_NAME"
-    if [ -z "$PREFIX" ]; then
-        echo "- S3 Key: lambda_code.zip"
-    else
-        echo "- S3 Key: $PREFIX/lambda_code.zip"
-    fi
-    echo
-    echo "When deploying the CloudFormation template, use:"
-    echo "- DeploymentBucket: $BUCKET_NAME"
-    if [ -z "$PREFIX" ]; then
-        echo "- DeploymentPrefix: (leave empty)"
-    else
-        echo "- DeploymentPrefix: $PREFIX"
-    fi
-    echo "====================================================="
-else
-    echo
-    echo "Error: Failed to upload Lambda code to S3."
-    echo "Please check your AWS credentials and bucket permissions."
-    echo
-fi
+=====================================================
+Lambda code has been packaged into lambda_code.zip.
+
+To upload manually, use one of the following methods:
+
+AWS CLI:
+aws s3 cp lambda_code.zip s3://<your-bucket-name>/lambda_code.zip --region <your-region>
+
+AWS Management Console:
+1. Navigate to the S3 service.
+2. Select your bucket.
+3. Click 'Upload' and add the lambda_code.zip file.
+
+=====================================================
+EOL
 
 # Keep the local zip file
 echo "The Lambda deployment package is also available locally as: lambda_code.zip" 
