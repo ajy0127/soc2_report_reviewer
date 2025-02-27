@@ -7,9 +7,6 @@ import json
 # Import the services
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../src/lambda'))
 from services.s3_service import S3Service
-from services.ocrmypdf_service import OCRmyPDFService
-from services.bedrock_service import BedrockService
-from services.ses_service import SESService
 
 class TestMocks(unittest.TestCase):
     """Test cases for mocking AWS services."""
