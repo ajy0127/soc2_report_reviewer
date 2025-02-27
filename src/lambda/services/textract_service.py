@@ -49,28 +49,24 @@ class TextractService:
         try:
             logger.info("Starting text extraction with Textract")
             
-            # Choose the appropriate API based on document size
-            # Textract's synchronous API has a 5MB limit
-            if len(pdf_content) < 5 * 1024 * 1024:  # 5MB limit for synchronous API
-                return self._extract_text_sync(pdf_content)
-            else:
-                # For larger documents, use asynchronous API
-                return self._extract_text_async(pdf_content)
-                
-        except ClientError as e:
-            logger.error(f"Error extracting text with Textract: {str(e)}")
-            
-            # If Textract fails, try using PyPDF2 as a fallback
-            if "UnsupportedDocumentException" in str(e):
-                logger.info("Falling back to PyPDF2 for text extraction")
+            # Try PyPDF2 first since we know Textract might fail
+            try:
+                logger.info("Attempting text extraction with PyPDF2 first")
                 return self._extract_text_with_pypdf2(pdf_content)
-            else:
-                raise
+            except Exception as e:
+                logger.warning(f"PyPDF2 extraction failed: {str(e)}, falling back to Textract")
+                
+                # Choose the appropriate API based on document size
+                # Textract's synchronous API has a 5MB limit
+                if len(pdf_content) < 5 * 1024 * 1024:  # 5MB limit for synchronous API
+                    return self._extract_text_sync(pdf_content)
+                else:
+                    # For larger documents, use asynchronous API
+                    return self._extract_text_async(pdf_content)
+                
         except Exception as e:
-            logger.error(f"Unexpected error in text extraction: {str(e)}")
-            # Try PyPDF2 as a last resort for any unexpected errors
-            logger.info("Falling back to PyPDF2 for text extraction")
-            return self._extract_text_with_pypdf2(pdf_content)
+            logger.error(f"Error extracting text: {str(e)}")
+            raise
     
     def _extract_text_with_pypdf2(self, pdf_content):
         """
@@ -114,21 +110,27 @@ class TextractService:
         Returns:
             str: The extracted text
         """
-        # Call the synchronous Textract API
-        response = self.textract_client.detect_document_text(
-            Document={'Bytes': pdf_content}
-        )
-        
-        # Extract text from the response
-        # Textract returns a list of "Blocks" of different types
-        # We're only interested in LINE blocks which contain text lines
-        text = ""
-        for item in response['Blocks']:
-            if item['BlockType'] == 'LINE':
-                text += item['Text'] + "\n"
-        
-        logger.info(f"Extracted {len(text)} characters of text")
-        return text
+        try:
+            # Call the synchronous Textract API
+            response = self.textract_client.detect_document_text(
+                Document={'Bytes': pdf_content}
+            )
+            
+            # Extract text from the response
+            # Textract returns a list of "Blocks" of different types
+            # We're only interested in LINE blocks which contain text lines
+            text = ""
+            for item in response['Blocks']:
+                if item['BlockType'] == 'LINE':
+                    text += item['Text'] + "\n"
+            
+            logger.info(f"Extracted {len(text)} characters of text")
+            return text
+        except ClientError as e:
+            if "UnsupportedDocumentException" in str(e):
+                logger.info("Document not supported by Textract, falling back to PyPDF2")
+                return self._extract_text_with_pypdf2(pdf_content)
+            raise
     
     def _extract_text_async(self, pdf_content):
         """
