@@ -42,10 +42,14 @@ Think of it as an automated compliance assistant that helps you analyze and unde
 
 ### For Technical Users (Advanced Deployment)
 1. Clone this repository
-2. Package the Lambda code:
+2. Deploy using the recommended CloudFormation-managed Lambda Layer approach:
    ```
-   ./scripts/deploy.sh --profile sandbox --region us-east-1
+   ./scripts/deploy_with_cf_layer.sh --profile sandbox --region us-east-1
    ```
+   
+   > **Note**: This approach requires Docker to be running for building binary dependencies in a Lambda-compatible environment. You can install Docker Desktop if you don't have it already.
+   
+   > **Important**: The older `deploy.sh` script is still available but not recommended as it requires Docker and doesn't properly separate dependencies into a Lambda Layer.
 
 ## Sample Deliverables for Your Portfolio
 

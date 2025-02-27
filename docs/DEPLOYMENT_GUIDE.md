@@ -36,12 +36,17 @@ Before you begin, ensure you have the following:
 
 1. Make the deployment script executable:
    ```
-   chmod +x scripts/deploy.sh
+   chmod +x scripts/deploy_with_cf_layer.sh
    ```
 
-2. Run the deployment script:
+2. **IMPORTANT: Docker Requirement**
+   This deployment method uses Docker to build Lambda-compatible binary dependencies.
+   - Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) if you don't have it already
+   - Ensure Docker Desktop is running before executing the deployment script
+
+3. Run the deployment script:
    ```
-   ./scripts/deploy.sh --profile sandbox --region us-east-1
+   ./scripts/deploy_with_cf_layer.sh --profile sandbox --region us-east-1
    ```
 
    You can customize the deployment with the following options:
@@ -51,13 +56,15 @@ Before you begin, ensure you have the following:
    - `--environment`: Environment name (dev, test, prod) (default: dev)
    - `--email`: Email address for notifications
    - `--s3-bucket`: S3 bucket for CloudFormation artifacts (optional)
+   - `--skip-layer`: Skip creating a Lambda Layer (not recommended)
 
-3. The script will:
+4. The script will:
    - Create a CloudFormation stack in your AWS account
-   - Deploy the necessary AWS resources (Lambda, S3, etc.)
-   - Configure the services to work together
+   - Build and deploy a Lambda Layer for binary dependencies
+   - Deploy the Lambda function code
+   - Configure all necessary AWS resources (S3, IAM, etc.)
 
-4. Wait for the deployment to complete. This typically takes 5-10 minutes.
+5. Wait for the deployment to complete. This typically takes 5-10 minutes.
 
 ## Step 4: Upload a SOC2 Report for Analysis
 
