@@ -1,1 +1,0 @@
-{"statusCode": 500, "body": {"error": "Error extracting text: The S3 object does not exist or is not accessible: Unable to get object metadata from S3. Check object key, region and/or access permissions.", "type": "TextractError"}}
