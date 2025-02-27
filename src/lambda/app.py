@@ -19,7 +19,7 @@ textract_service = TextractService()  # Handles text extraction from PDFs
 bedrock_service = BedrockService()    # Handles AI analysis with Amazon Bedrock
 ses_service = SESService()      # Handles email notifications via SES
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):  # AWS Lambda requires context parameter but we don't use it
     """
     Main Lambda handler function for SOC2-Analyzer.
     
@@ -34,7 +34,7 @@ def lambda_handler(event, context):
     
     Args:
         event (dict): The event dict containing the S3 event details
-        context (LambdaContext): The Lambda context object
+        _ (LambdaContext): The Lambda context object (unused)
         
     Returns:
         dict: Response containing status code and body
