@@ -1,140 +1,118 @@
-# SOC2-Analyzer
+# SOC2 Report Analyzer
 
-An automated system for analyzing SOC2 reports using AWS serverless architecture and AI.
+## A Portfolio-Building Project for GRC Professionals
 
-## Overview
+This project is designed specifically for Governance, Risk, and Compliance (GRC) professionals who want to enhance their technical skills and build a practical portfolio demonstrating cloud security compliance expertise with SOC2 reports.
 
-SOC2-Analyzer automates the process of analyzing SOC2 reports, extracting key information, and providing structured insights. It leverages AWS services including Lambda, S3, Textract, Amazon Bedrock, and SES to create a serverless workflow that processes PDF reports and delivers analysis results via email.
+## Why This Project Matters for Your GRC Portfolio
 
-## Key Features
+As a GRC professional, demonstrating practical experience with SOC2 report analysis is increasingly valuable. This project allows you to:
 
-- **Automated Text Extraction**: Uses Amazon Textract to extract text from PDF SOC2 reports
-- **AI-Powered Analysis**: Leverages Amazon Bedrock to analyze report content and extract key insights
-- **Serverless Architecture**: Fully serverless implementation using AWS Lambda and S3
-- **Email Notifications**: Sends analysis results via email using Amazon SES
-- **Standardized Output**: Provides structured JSON output with consistent format
+- **Showcase SOC2 Knowledge**: Demonstrate your understanding of SOC2 controls and report analysis in a practical context
+- **Bridge the Technical Gap**: Build confidence working with AI-powered analysis tools without needing deep technical expertise
+- **Create Tangible Deliverables**: Generate professional analysis reports you can showcase to potential employers
+- **Learn AWS Security Basics**: Gain hands-on experience with AWS services in a guided environment
 
-## Architecture
+## What You'll Learn
 
-The SOC2-Analyzer uses the following AWS services:
+This project will help you understand:
 
-- **Amazon S3**: Stores input SOC2 reports and analysis results
-- **AWS Lambda**: Processes reports and orchestrates the analysis workflow
-- **Amazon Textract**: Extracts text from PDF documents
-- **Amazon Bedrock**: Performs AI analysis of report content
-- **Amazon SES**: Sends email notifications with analysis results
-- **Amazon EventBridge**: Triggers Lambda function when new reports are uploaded
-- **Amazon CloudWatch**: Monitors and logs system activity
-- **AWS IAM**: Manages permissions and access control
+1. **How SOC2 Reports Are Structured**: Learn how to extract key information from SOC2 reports
+2. **AI-Powered Analysis**: See how AI can be used to analyze compliance documentation
+3. **Compliance Reporting**: Create professional analysis reports suitable for auditors and executives
+4. **Basic Cloud Automation**: Experience how compliance analysis can be automated
 
-## Deployment
+## Project Overview (Non-Technical)
 
-### Prerequisites
+This solution automatically:
+1. Extracts text from SOC2 PDF reports using Amazon Textract
+2. Analyzes the content using AI (Amazon Bedrock)
+3. Generates structured insights about the report
+4. Delivers analysis results via email
 
-- AWS CLI installed and configured with appropriate permissions
-- Python 3.9 or later
-- An AWS account with access to all required services
-- A verified email address in Amazon SES for notifications
+Think of it as an automated compliance assistant that helps you analyze and understand SOC2 reports.
 
-### Deployment Steps
+## Getting Started
 
-1. Clone this repository:
-   ```
-   git clone https://github.com/yourusername/soc2-analyzer.git
-   cd soc2-analyzer
-   ```
+### For Non-Technical Users
+1. Follow the step-by-step [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) which includes:
+   - Setting up your AWS account
+   - Deploying the solution using CloudFormation
+   - Configuring and testing the solution
 
-2. Deploy the CloudFormation stack using the provided script:
+### For Technical Users (Advanced Deployment)
+1. Clone this repository
+2. Package the Lambda code:
    ```
    ./scripts/deploy.sh --profile sandbox --region us-east-1
    ```
 
-   Optional parameters:
-   - `--stack-name`: Name for the CloudFormation stack (default: soc2-analyzer)
-   - `--region`: AWS region to deploy to (default: us-east-1)
-   - `--profile`: AWS CLI profile to use (default: sandbox)
-   - `--environment`: Environment name (dev, test, prod) (default: dev)
-   - `--email`: Email address for notifications (default: alexanderjyawn@gmail.com)
-   - `--s3-bucket`: S3 bucket for CloudFormation artifacts (optional)
+## Sample Deliverables for Your Portfolio
 
-## Usage
+After completing this project, you'll have several artifacts to add to your professional portfolio:
 
-1. **Upload a SOC2 Report**:
-   - Navigate to the S3 console and find the input bucket created by the stack
-   - Upload a SOC2 report in PDF format
+1. **SOC2 Analysis Reports**: Professional-looking reports analyzing SOC2 documents
+2. **Analysis Dashboard**: Screenshots of your analysis setup
+3. **Project Implementation**: Documentation of your deployment process
+4. **Risk Analysis**: Sample analysis of SOC2 findings and their compliance impact
 
-2. **Automated Processing**:
-   - The system automatically detects the new file and starts processing
-   - Text is extracted using Amazon Textract
-   - The content is analyzed using Amazon Bedrock
-   - Results are stored in the output S3 bucket
+## Understanding the Components (Simplified)
 
-3. **Receive Notification**:
-   - Once processing is complete, you'll receive an email notification
-   - The email contains a summary of the analysis and a link to the full results
+This solution consists of several parts, explained in non-technical terms:
 
-4. **Review Results**:
-   - Click the link in the email to access the full analysis results
-   - The results are provided in JSON format with structured sections
+1. **The Extractor** (Amazon Textract): Automatically extracts text from PDF SOC2 reports
+2. **The Analyzer** (AI Component): Reviews report content and generates compliance insights
+3. **The Storage** (Amazon S3): Securely stores reports and analysis results
+4. **The Reporter** (Email Component): Creates and delivers professional analysis reports
 
-## Project Structure
+## Repository Structure
 
-```
-soc2-analyzer/
-├── docs/                   # Documentation
-├── scripts/                # Deployment and utility scripts
-├── src/                    # Source code
-│   └── lambda/             # Lambda function code
-│       ├── app.py          # Main Lambda handler
-│       ├── services/       # Service modules
-│       └── utils/          # Utility modules
-├── templates/              # CloudFormation templates
-└── tests/                  # Test files
-    └── unit/               # Unit tests
-```
+This repository is organized into the following directories:
 
-## Development
+- **docs/**: Documentation files including deployment guides and SOC2 analysis references
+- **scripts/**: Utility scripts for package creation, deployment, and local testing
+- **src/**: Source code for the application, including Lambda function code and utility modules
+  - **src/lambda/**: Lambda function code
+- **templates/**: CloudFormation templates for deployment
+- **tests/**: Test files to verify the functionality of the code
 
-### Local Development Setup
+## Customizing for Your Portfolio
 
-1. Create a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+You can customize this project to demonstrate your unique GRC expertise:
 
-2. Install dependencies:
-   ```
-   pip install -r src/lambda/requirements.txt
-   pip install -r requirements-dev.txt
-   ```
+1. **Modify Analysis Parameters**: Edit the configuration to focus on specific SOC2 controls
+2. **Customize Report Format**: Adjust the email template to showcase your reporting style
+3. **Add Additional Analysis**: Extend the project to include other compliance frameworks you're familiar with
 
-3. Run tests:
-   ```
-   ./scripts/run_tests.sh
-   ```
+## FAQ for GRC Professionals
 
-### CI/CD Pipeline
+**Q: Do I need coding experience to use this?**  
+A: No! The step-by-step guide allows you to deploy and use the solution without writing code.
 
-This project uses GitHub Actions for continuous integration:
+**Q: Will this cost money to run?**  
+A: AWS offers a free tier that should cover most of your usage. We recommend setting up billing alerts.
 
-1. **Automated Testing**: All tests are automatically run on push to main/develop branches and on pull requests
-2. **CloudFormation Validation**: The CloudFormation template is validated using cfn-lint
-3. **Code Quality Checks**: Linting is performed to ensure code quality
+**Q: Can I use this for actual compliance analysis?**  
+A: This is designed as a learning tool. For production environments, additional security and reliability considerations would be needed.
 
-The CI/CD pipeline does not include automatic deployment to AWS. Users should deploy the application manually using the CloudFormation template as described in the Deployment section.
+**Q: How do I explain this project in interviews?**  
+A: We've included talking points in the documentation to help you articulate what you've learned.
 
-For more details on the CI/CD setup, see the [GitHub Actions documentation](.github/README.md).
+## Next Steps After Completing This Project
 
-## License
+After you've completed this project, consider these next steps for your GRC portfolio:
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. **Add Multi-Framework Support**: Extend the project to analyze other compliance frameworks like NIST or ISO 27001
+2. **Create Executive Dashboards**: Design visual summaries of compliance status
+3. **Develop Remediation Workflows**: Outline processes for addressing compliance gaps
+4. **Document Your Journey**: Write a blog post or LinkedIn article about what you learned
 
-## Contributing
+## Resources for GRC Professionals
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- [SOC2 Analysis Guide](docs/SOC2_ANALYSIS_GUIDE.md)
+- [Sample Portfolio Write-up Template](docs/PORTFOLIO_TEMPLATE.md)
+- [Example SOC2 Analysis Report](docs/example-report.md)
 
-## Acknowledgements
+## Acknowledgments
 
-- AWS for providing the cloud infrastructure
-- Anthropic for the Claude AI model used in analysis 
+This project was designed to bridge the gap between technical security implementations and GRC requirements, making SOC2 report analysis more accessible to non-technical professionals. 

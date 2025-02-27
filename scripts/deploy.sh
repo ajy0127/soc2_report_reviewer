@@ -73,7 +73,7 @@ cp -r src/lambda/* "$TEMP_DIR/lambda/"
 # Install dependencies
 # This installs the required Python packages into the Lambda package
 echo "Installing dependencies..."
-pip install -r "$TEMP_DIR/lambda/requirements.txt" -t "$TEMP_DIR/lambda/" --no-cache-dir
+python3 -m pip install -r "$TEMP_DIR/lambda/requirements.txt" -t "$TEMP_DIR/lambda/" --no-cache-dir
 
 # Create deployment package
 # Zip the Lambda function code and dependencies
