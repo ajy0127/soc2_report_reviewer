@@ -11,13 +11,13 @@ from utils.validation import validate_event, validate_pdf_file, ValidationError
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     """
     Lambda function handler for SOC2 report analysis.
     
     Args:
         event (dict): Lambda event containing S3 bucket and key information
-        context (LambdaContext): Lambda context
+        _context (LambdaContext): Lambda context (unused)
         
     Returns:
         dict: Response containing status and analysis results

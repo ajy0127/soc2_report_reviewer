@@ -1,11 +1,8 @@
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock, mock_open, call
+from unittest.mock import patch, MagicMock
 import json
-import subprocess
-import tempfile
-import PyPDF2
 
 # Import the services
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../src/lambda'))

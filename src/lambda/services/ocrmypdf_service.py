@@ -2,11 +2,9 @@ import subprocess
 import tempfile
 import os
 import logging
-from pathlib import Path
 import PyPDF2
 from io import BytesIO
 import io
-import shutil
 import re
 import pymupdf4llm
 
@@ -243,7 +241,7 @@ class OCRmyPDFService:
             
             # Run OCRmyPDF
             logger.info(f"Running OCRmyPDF command: {' '.join(cmd)}")
-            result = subprocess.run(
+            subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
