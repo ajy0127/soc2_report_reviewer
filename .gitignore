@@ -51,3 +51,5 @@ htmlcov/
 
 # SOC2 Reports - Do not commit these to GitHub
 Example_SOC2Reports/ 
+# Analysis results from SOC2 reports - May contain sensitive information
+results/ 
