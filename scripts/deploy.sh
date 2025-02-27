@@ -14,6 +14,7 @@ REGION="us-east-1"  # Default AWS region
 PROFILE="sandbox"  # AWS CLI profile to use
 ENVIRONMENT="dev"  # Environment (dev, test, prod)
 NOTIFICATION_EMAIL="alexanderjyawn@gmail.com"  # Email for notifications
+USE_DOCKER=true  # Use Docker to build dependencies (recommended for binary dependencies)
 
 # Parse command line arguments
 # This allows users to customize the deployment parameters
@@ -43,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       NOTIFICATION_EMAIL="$2"
       shift 2
       ;;
+    --no-docker)
+      USE_DOCKER=false
+      shift
+      ;;
     *)
       echo "Unknown option: $1"
       exit 1
@@ -57,6 +62,7 @@ echo "Region: $REGION"
 echo "Profile: $PROFILE"
 echo "Environment: $ENVIRONMENT"
 echo "Notification Email: $NOTIFICATION_EMAIL"
+echo "Use Docker: $USE_DOCKER"
 echo "================================"
 
 # Create a temporary directory for packaging
@@ -73,7 +79,44 @@ cp -r src/lambda/* "$TEMP_DIR/lambda/"
 # Install dependencies
 # This installs the required Python packages into the Lambda package
 echo "Installing dependencies..."
-python3 -m pip install -r "$TEMP_DIR/lambda/requirements.txt" -t "$TEMP_DIR/lambda/" --no-cache-dir
+
+if [ "$USE_DOCKER" = true ]; then
+  # Use Docker to build dependencies in an environment compatible with Lambda
+  echo "Using Docker to build dependencies for Lambda compatibility..."
+  
+  # Check if Docker is installed
+  if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed or not in PATH. Please install Docker or use --no-docker flag."
+    exit 1
+  fi
+  
+  # Create a Dockerfile for building dependencies
+  cat > "$TEMP_DIR/Dockerfile" << EOF
+FROM public.ecr.aws/lambda/python:3.9
+
+COPY lambda/requirements.txt .
+RUN pip install -r requirements.txt --target /var/task
+
+CMD ["echo", "Dependencies installed successfully"]
+EOF
+  
+  # Build the Docker image and copy dependencies
+  echo "Building Docker image for Lambda dependencies..."
+  docker build -t soc2-analyzer-deps "$TEMP_DIR" || { echo "Docker build failed"; exit 1; }
+  
+  # Run a container to extract the dependencies
+  echo "Extracting dependencies from Docker container..."
+  CONTAINER_ID=$(docker create soc2-analyzer-deps)
+  docker cp $CONTAINER_ID:/var/task/. "$TEMP_DIR/lambda/"
+  docker rm $CONTAINER_ID
+  
+  # Clean up Docker image
+  docker rmi soc2-analyzer-deps
+else
+  # Install dependencies locally (not recommended for binary dependencies)
+  echo "Installing dependencies locally (not recommended for binary dependencies)..."
+  python3 -m pip install -r "$TEMP_DIR/lambda/requirements.txt" -t "$TEMP_DIR/lambda/" --no-cache-dir
+fi
 
 # Create deployment package
 # Zip the Lambda function code and dependencies
