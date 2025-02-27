@@ -1,6 +1,6 @@
 # SOC2-Analyzer Deployment Scripts
 
-This directory contains scripts for deploying the SOC2-Analyzer Lambda function with different approaches for handling binary dependencies.
+This directory contains scripts for deploying the SOC2-Analyzer Lambda function with approaches for handling binary dependencies.
 
 ## Deployment Options
 
@@ -43,25 +43,6 @@ This approach creates a separate Lambda Layer for binary dependencies and deploy
 - `--environment ENV`: Environment name (default: "dev")
 - `--email EMAIL`: Notification email (default: "alexanderjyawn@gmail.com")
 - `--layer-name NAME`: Lambda Layer name (default: "soc2-analyzer-dependencies")
-
-### Option 3: Docker-based Deployment (`deploy.sh`) - LEGACY
-
-**Note: This approach is maintained for backward compatibility but is not recommended.**
-
-This approach uses Docker to build the Lambda package in an environment that matches the Lambda runtime. This ensures binary dependencies are compiled correctly for the target environment.
-
-```bash
-./scripts/deploy.sh [options]
-```
-
-**Options:**
-- `--stack-name NAME`: CloudFormation stack name (default: "soc2-analyzer")
-- `--region REGION`: AWS region (default: "us-east-1")
-- `--profile PROFILE`: AWS CLI profile (default: "sandbox")
-- `--s3-bucket BUCKET`: S3 bucket for CloudFormation artifacts (optional)
-- `--environment ENV`: Environment name (default: "dev")
-- `--email EMAIL`: Notification email (default: "alexanderjyawn@gmail.com")
-- `--no-docker`: Skip using Docker for building dependencies (not recommended)
 
 ## Creating Lambda Layers Manually
 
