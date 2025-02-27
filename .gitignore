@@ -47,4 +47,7 @@ Thumbs.db
 htmlcov/
 
 # Logs
-*.log 
+*.log
+
+# SOC2 Reports - Do not commit these to GitHub
+Example_SOC2Reports/ 
