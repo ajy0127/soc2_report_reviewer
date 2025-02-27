@@ -30,10 +30,21 @@ Parameters:
     Type: String
     Default: anthropic.claude-3-sonnet-20240229-v1:0
     Description: Amazon Bedrock model ID for AI analysis
+    
+  LayerPackageBucket:
+    Type: String
+    Default: ''
+    Description: S3 bucket containing the Lambda Layer package (leave blank to not use a layer)
+    
+  LayerPackageKey:
+    Type: String
+    Default: ''
+    Description: S3 key for the Lambda Layer package (leave blank to not use a layer)
 
 Conditions:
   CreateInputBucket: !Equals [!Ref InputBucketName, '']
   CreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+  CreateLayer: !And [!Not [!Equals [!Ref LayerPackageBucket, '']], !Not [!Equals [!Ref LayerPackageKey, '']]]
 
 Resources:
   # S3 Buckets
@@ -83,6 +94,22 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: SOC2-Analyzer
+
+  # Lambda Layer for binary dependencies
+  SOC2AnalyzerDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Condition: CreateLayer
+    Properties:
+      LayerName: !Sub 'soc2-analyzer-dependencies-${Environment}'
+      Description: Binary dependencies for the SOC2 Analyzer Lambda function
+      Content:
+        S3Bucket: !Ref LayerPackageBucket
+        S3Key: !Ref LayerPackageKey
+      CompatibleRuntimes:
+        - python3.9
+      CompatibleArchitectures:
+        - x86_64
+      LicenseInfo: 'MIT'
 
   # IAM Role for Lambda
   LambdaExecutionRole:
@@ -143,6 +170,10 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Timeout: 900  # 15 minutes
       MemorySize: 1024
+      Layers: !If
+        - CreateLayer
+        - [!Ref SOC2AnalyzerDependenciesLayer]
+        - !Ref AWS::NoValue
       Environment:
         Variables:
           INPUT_BUCKET: !Ref InputBucket
