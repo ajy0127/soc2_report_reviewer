@@ -125,11 +125,45 @@ fi
 # We do this separately to ensure the latest code is deployed
 echo "Updating Lambda function code..."
 FUNCTION_NAME="${STACK_NAME}-${ENVIRONMENT}"
-aws lambda update-function-code \
-  --function-name "$FUNCTION_NAME" \
-  --zip-file "fileb://$TEMP_DIR/lambda_package.zip" \
-  --region "$REGION" \
-  --profile "$PROFILE"
+
+# Get the package size
+PACKAGE_SIZE=$(stat -f%z "$TEMP_DIR/lambda_package.zip")
+SIZE_LIMIT=50000000  # 50MB limit for direct upload
+
+if [ $PACKAGE_SIZE -gt $SIZE_LIMIT ]; then
+  echo "Package size ($PACKAGE_SIZE bytes) exceeds direct upload limit ($SIZE_LIMIT bytes)"
+  echo "Uploading package to S3 first..."
+  
+  # Create S3 bucket if it doesn't exist and S3_BUCKET is not provided
+  if [ -z "$S3_BUCKET" ]; then
+    S3_BUCKET="${STACK_NAME}-${ENVIRONMENT}-lambda-packages-${REGION}"
+    echo "Creating S3 bucket for Lambda packages: $S3_BUCKET"
+    aws s3 mb "s3://$S3_BUCKET" --region "$REGION" --profile "$PROFILE" || true
+  fi
+  
+  # Upload package to S3
+  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+  S3_KEY="lambda-packages/${FUNCTION_NAME}-${TIMESTAMP}.zip"
+  echo "Uploading package to s3://${S3_BUCKET}/${S3_KEY}"
+  aws s3 cp "$TEMP_DIR/lambda_package.zip" "s3://${S3_BUCKET}/${S3_KEY}" --region "$REGION" --profile "$PROFILE"
+  
+  # Update Lambda function from S3
+  echo "Updating Lambda function from S3..."
+  aws lambda update-function-code \
+    --function-name "$FUNCTION_NAME" \
+    --s3-bucket "$S3_BUCKET" \
+    --s3-key "$S3_KEY" \
+    --region "$REGION" \
+    --profile "$PROFILE"
+else
+  # Direct upload for smaller packages
+  echo "Updating Lambda function with direct upload..."
+  aws lambda update-function-code \
+    --function-name "$FUNCTION_NAME" \
+    --zip-file "fileb://$TEMP_DIR/lambda_package.zip" \
+    --region "$REGION" \
+    --profile "$PROFILE"
+fi
 
 # Clean up
 # Remove the temporary directory
