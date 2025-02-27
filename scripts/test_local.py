@@ -12,14 +12,17 @@ import json
 import logging
 import io
 from pathlib import Path
+import boto3
 import PyPDF2
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 # Add the src directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '../src/lambda'))
 
 # Import the services
 from services.s3_service import S3Service
-from services.textract_service import TextractService
+from services.ocrmypdf_service import OCRmyPDFService
 from services.bedrock_service import BedrockService
 from services.ses_service import SESService
 from utils.validation import validate_pdf_file
@@ -29,12 +32,15 @@ logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('soc2-analyzer-local')
 
+# Set up AWS session with sandbox profile
+session = boto3.Session(profile_name='sandbox', region_name='us-east-1')
+
 # Set environment variables for local testing
-os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'  # Change as needed
+os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 os.environ['INPUT_BUCKET'] = 'local-test-bucket'
 os.environ['OUTPUT_BUCKET'] = 'local-test-bucket'
 os.environ['NOTIFICATION_EMAIL'] = 'test@example.com'
-os.environ['BEDROCK_MODEL_ID'] = 'anthropic.claude-v2'  # Change as needed
+os.environ['BEDROCK_MODEL_ID'] = 'anthropic.claude-v2'
 os.environ['ENVIRONMENT'] = 'local'
 
 class LocalS3Service:
@@ -59,56 +65,6 @@ class LocalS3Service:
     def generate_presigned_url(self, bucket, key):
         """Generate a fake presigned URL for local testing."""
         return f"file://{os.path.abspath(key)}"
-
-class LocalTextractService:
-    """Local implementation of TextractService for testing without AWS."""
-    
-    def extract_text(self, pdf_content):
-        """
-        Extract text from a PDF using PyPDF2 instead of Textract.
-        
-        Args:
-            pdf_content (bytes): The PDF content as bytes
-            
-        Returns:
-            str: The extracted text
-        """
-        logger.info("Extracting text from PDF using PyPDF2")
-        
-        try:
-            # Create a PDF file reader object
-            pdf_file = io.BytesIO(pdf_content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            
-            # Extract text from each page
-            text = ""
-            num_pages = len(pdf_reader.pages)
-            logger.info(f"PDF has {num_pages} pages")
-            
-            # Only process the first 10 pages for speed in local testing
-            max_pages = min(10, num_pages)
-            
-            for page_num in range(max_pages):
-                page = pdf_reader.pages[page_num]
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n\n"
-                
-                # Log progress for large documents
-                if page_num % 5 == 0 and page_num > 0:
-                    logger.info(f"Processed {page_num} of {max_pages} pages")
-            
-            logger.info(f"Successfully extracted {len(text)} characters of text")
-            
-            # If we limited the pages, add a note
-            if max_pages < num_pages:
-                text += f"\n\n[Note: Only the first {max_pages} pages of {num_pages} were processed for local testing]"
-                
-            return text
-            
-        except Exception as e:
-            logger.error(f"Error extracting text from PDF: {str(e)}")
-            return f"Error extracting text: {str(e)}"
 
 class LocalBedrockService:
     """Local implementation of BedrockService for testing without AWS."""
@@ -163,6 +119,47 @@ class LocalSESService:
         logger.info(json.dumps(analysis_result, indent=2))
         return {"MessageId": "local-test-message-id"}
 
+def create_test_pdf():
+    """Create a test PDF file with sample SOC2 report content."""
+    example_dir = Path("Example_SOC2Reports")
+    example_dir.mkdir(exist_ok=True)
+    
+    pdf_path = example_dir / "test_soc2_report.pdf"
+    
+    # Create PDF with reportlab
+    c = canvas.Canvas(str(pdf_path), pagesize=letter)
+    
+    # Add title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(72, 750, "Sample SOC2 Type 2 Report")
+    
+    # Add content
+    c.setFont("Helvetica", 12)
+    y = 700
+    sample_text = [
+        "Section I: Independent Service Auditor's Report",
+        "",
+        "To the Management of Example Organization:",
+        "",
+        "Scope",
+        "We have examined Example Organization's description of its cloud services system...",
+        "",
+        "Control Objectives and Related Controls",
+        "Our examination included procedures to obtain reasonable assurance about whether:",
+        "- The description fairly presents the system that was designed and implemented",
+        "- The controls stated in the description were suitably designed",
+        "- The controls operated effectively throughout the period"
+    ]
+    
+    for line in sample_text:
+        c.drawString(72, y, line)
+        y -= 20
+    
+    c.save()
+    
+    logger.info(f"Created test PDF at {pdf_path}")
+    return pdf_path
+
 def process_soc2_report(file_path):
     """
     Process a SOC2 report using the same logic as the Lambda function.
@@ -173,9 +170,9 @@ def process_soc2_report(file_path):
     logger.info(f"Processing SOC2 report: {file_path}")
     
     try:
-        # Initialize local service implementations
+        # Initialize services - using OCRmyPDFService instead of LandingAIService
         s3_service = LocalS3Service()
-        textract_service = LocalTextractService()
+        ocrmypdf_service = OCRmyPDFService()  # Using OCRmyPDF for text extraction
         bedrock_service = LocalBedrockService()
         ses_service = LocalSESService()
         
@@ -187,9 +184,10 @@ def process_soc2_report(file_path):
         validate_pdf_file(pdf_content)
         logger.info("PDF validation successful")
         
-        # Extract text from the PDF
-        extracted_text = textract_service.extract_text(pdf_content)
+        # Extract text from the PDF using OCRmyPDF
+        extracted_text = ocrmypdf_service.extract_text(pdf_content)
         logger.info(f"Successfully extracted text from {file_path}")
+        logger.info(f"Extracted text: {extracted_text[:200]}...")  # Show first 200 chars
         
         # Analyze the text
         analysis_result = bedrock_service.analyze_soc2_report(extracted_text)
@@ -215,27 +213,22 @@ def process_soc2_report(file_path):
         logger.error(f"Error processing SOC2 report: {str(e)}", exc_info=True)
 
 def main():
-    """Main function to process all SOC2 reports in the example folder."""
-    example_dir = Path("Example_SOC2Reports")
-    results_dir = Path("results")
+    """Main function to process test PDF."""
+    # Check if a file path was provided as a command line argument
+    if len(sys.argv) > 1:
+        # Use the provided file path
+        pdf_file = sys.argv[1]
+        if not os.path.exists(pdf_file):
+            logger.error(f"File not found: {pdf_file}")
+            sys.exit(1)
+    else:
+        # Create a test PDF if no file path was provided
+        pdf_file = create_test_pdf()
     
-    # Create results directory if it doesn't exist
-    results_dir.mkdir(exist_ok=True)
+    # Process the PDF
+    process_soc2_report(pdf_file)
     
-    # Process each PDF file in the example directory
-    pdf_files = list(example_dir.glob("*.pdf"))
-    
-    if not pdf_files:
-        logger.error(f"No PDF files found in {example_dir}")
-        return
-    
-    logger.info(f"Found {len(pdf_files)} PDF files to process")
-    
-    for pdf_file in pdf_files:
-        process_soc2_report(pdf_file)
-    
-    logger.info("All SOC2 reports processed successfully")
-    logger.info(f"Results are available in the {results_dir} directory")
+    logger.info("Test complete")
 
 if __name__ == "__main__":
     main() 
