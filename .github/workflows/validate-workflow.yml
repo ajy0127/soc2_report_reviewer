@@ -14,26 +14,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
+    - name: Basic YAML syntax check
+      run: |
+        if grep -q "^[[:space:]]*[^[:space:]#]" .github/workflows/ci-cd.yml; then
+          echo "Basic syntax check passed"
+        else
+          echo "File appears to be empty or contains only comments"
+          exit 1
+        fi
         
-    - name: Install dependencies
-      run: npm install js-yaml
-      
-    - name: Validate GitHub Actions workflow
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const fs = require('fs');
-          const yaml = require('js-yaml');
-          
-          try {
-            const workflow = yaml.load(fs.readFileSync('.github/workflows/ci-cd.yml', 'utf8'));
-            console.log('Workflow validation successful!');
-            console.log('Jobs defined:', Object.keys(workflow.jobs).join(', '));
-          } catch (error) {
-            console.error('Workflow validation failed:', error);
-            process.exit(1);
-          } 
+    - name: Install actionlint
+      run: |
+        bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+        
+    - name: Run actionlint
+      run: |
+        ./actionlint -color .github/workflows/ci-cd.yml
+        echo "Workflow validation successful!" 
