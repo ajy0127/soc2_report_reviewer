@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SOC2-Analyzer - Automated system for analyzing SOC2 reports using AWS serverless architecture and AI'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
+    Description: Environment name for deployment
+  
+  NotificationEmail:
+    Type: String
+    Default: alexanderjyawn@gmail.com
+    Description: Email address to receive analysis notifications
+  
+  InputBucketName:
+    Type: String
+    Default: ''
+    Description: Name for the S3 bucket to store input SOC2 reports (leave blank for auto-generated name)
+  
+  OutputBucketName:
+    Type: String
+    Default: ''
+    Description: Name for the S3 bucket to store analysis results (leave blank for auto-generated name)
+  
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-sonnet-20240229-v1:0
+    Description: Amazon Bedrock model ID for AI analysis
+
+Conditions:
+  CreateInputBucket: !Equals [!Ref InputBucketName, '']
+  CreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+
+Resources:
+  # S3 Buckets
+  InputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !If 
+        - CreateInputBucket
+        - !Sub 'soc2-analyzer-input-${AWS::AccountId}-${Environment}'
+        - !Ref InputBucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReports
+            Status: Enabled
+            ExpirationInDays: 90
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: SOC2-Analyzer
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !If 
+        - CreateOutputBucket
+        - !Sub 'soc2-analyzer-output-${AWS::AccountId}-${Environment}'
+        - !Ref OutputBucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldResults
+            Status: Enabled
+            ExpirationInDays: 90
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: SOC2-Analyzer
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SOC2AnalyzerPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt InputBucket.Arn
+                  - !Sub '${InputBucket.Arn}/*'
+                  - !GetAtt OutputBucket.Arn
+                  - !Sub '${OutputBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - textract:DetectDocumentText
+                  - textract:StartDocumentTextDetection
+                  - textract:GetDocumentTextDetection
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: SOC2-Analyzer
+
+  # Lambda Function
+  SOC2AnalyzerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'soc2-analyzer-${Environment}'
+      Runtime: python3.9
+      Handler: app.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 900  # 15 minutes
+      MemorySize: 1024
+      Environment:
+        Variables:
+          INPUT_BUCKET: !Ref InputBucket
+          OUTPUT_BUCKET: !Ref OutputBucket
+          NOTIFICATION_EMAIL: !Ref NotificationEmail
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          ENVIRONMENT: !Ref Environment
+      Code:
+        ZipFile: |
+          import json
+          import os
+          
+          def lambda_handler(event, context):
+              # This is a placeholder. The actual code will be deployed separately.
+              print("SOC2-Analyzer Lambda function invoked")
+              print(f"Event: {json.dumps(event)}")
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('SOC2-Analyzer Lambda function executed successfully')
+              }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: SOC2-Analyzer
+
+  # EventBridge Rule for S3 Events
+  S3UploadRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'soc2-analyzer-s3-upload-${Environment}'
+      Description: 'Rule to trigger Lambda when a new SOC2 report is uploaded to S3'
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - 'Object Created'
+        detail:
+          bucket:
+            name:
+              - !Ref InputBucket
+          object:
+            key:
+              - prefix: ''
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SOC2AnalyzerFunction.Arn
+          Id: 'SOC2AnalyzerTarget'
+
+  # Lambda Permission for EventBridge
+  LambdaPermissionForEventBridge:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SOC2AnalyzerFunction
+      Action: 'lambda:InvokeFunction'
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt S3UploadRule.Arn
+
+  # CloudWatch Log Group
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/soc2-analyzer-${Environment}'
+      RetentionInDays: 30
+
+Outputs:
+  InputBucketName:
+    Description: 'Name of the S3 bucket for input SOC2 reports'
+    Value: !Ref InputBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-InputBucketName'
+
+  OutputBucketName:
+    Description: 'Name of the S3 bucket for analysis results'
+    Value: !Ref OutputBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-OutputBucketName'
+
+  LambdaFunctionName:
+    Description: 'Name of the Lambda function'
+    Value: !Ref SOC2AnalyzerFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaFunctionName'
+
+  LambdaFunctionArn:
+    Description: 'ARN of the Lambda function'
+    Value: !GetAtt SOC2AnalyzerFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaFunctionArn'
+
+  NotificationEmail:
+    Description: 'Email address for notifications'
+    Value: !Ref NotificationEmail 

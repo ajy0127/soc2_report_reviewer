@@ -1,0 +1,31 @@
+name: Validate GitHub Actions Workflow
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-cd.yml'
+
+jobs:
+  validate:
+    name: Validate Workflow
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Validate GitHub Actions workflow
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+          
+          try {
+            const workflow = yaml.load(fs.readFileSync('.github/workflows/ci-cd.yml', 'utf8'));
+            console.log('Workflow validation successful!');
+            console.log('Jobs defined:', Object.keys(workflow.jobs).join(', '));
+          } catch (error) {
+            console.error('Workflow validation failed:', error);
+            process.exit(1);
+          } 

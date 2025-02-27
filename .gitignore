@@ -23,22 +23,14 @@ var/
 # Virtual Environment
 venv/
 ENV/
-env/
 
-# AWS SAM
-.aws-sam/
-samconfig.toml
-
-# Build directory
-.build/
-
-# IDE
+# IDE files
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS
+# OS specific files
 .DS_Store
 .DS_Store?
 ._*
@@ -47,7 +39,12 @@ samconfig.toml
 ehthumbs.db
 Thumbs.db
 
-# Deployment
-lambda_deployment.zip
-packaged-template.yaml
-test_response.json 
+# AWS Lambda deployment packages
+*.zip
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Logs
+*.log 
