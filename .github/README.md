@@ -1,3 +1,5 @@
+[![SOC2-Analyzer CI/CD](https://github.com/ajy0127/soc2_report_reviewer/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ajy0127/soc2_report_reviewer/actions/workflows/ci-cd.yml)
+
 # GitHub Actions CI/CD for SOC2-Analyzer
 
 This directory contains the GitHub Actions workflow configuration for the SOC2-Analyzer project.
